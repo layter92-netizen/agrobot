@@ -133,8 +133,10 @@
         </div>
 
         <div class="form-group">
-            <label>Назва товару/препарату</label>
-            <input type="text" id="item_name" placeholder="Напр. Аміачна селітра">
+            <label>Назва товару/препарату <span id="loading_indicator" style="font-size: 12px; color: var(--tg-theme-button-color);"></span></label>
+            <select id="item_name">
+                <option value="">Завантаження...</option>
+            </select>
         </div>
     </div>
 
@@ -146,12 +148,7 @@
             </div>
             <div style="flex: 1;">
                 <label>Одиниця</label>
-                <select id="unit">
-                    <option value="л">л</option>
-                    <option value="кг">кг</option>
-                    <option value="шт">шт</option>
-                    <option value="т">т</option>
-                </select>
+                <input type="text" id="unit" readonly style="background: rgba(0,0,0,0.05); color: #6b7280;">
             </div>
         </div>
     </div>
@@ -165,14 +162,78 @@
 
     <script>
         const tg = window.Telegram.WebApp;
-        tg.expand(); // Завжди на весь екран
+        tg.expand(); 
 
-        // Перевірка темної теми
         if (tg.colorScheme === 'dark') {
             document.body.classList.add('dark-theme');
         }
 
         let currentAction = 'arrival';
+        let inventoryData = [];
+
+        // Fetch data from Google Apps Script
+        const SCRIPT_URL = 'https://script.google.com/macros/s/AKfycbySg13GfDilR3CYva2d-6QmjAlWmY4aQOkS3C7LwRyrFPsO_lUn_e15tWefbBca6A8u/exec';
+        
+        async function loadInventory() {
+            const indicator = document.getElementById('loading_indicator');
+            const itemSelect = document.getElementById('item_name');
+            indicator.textContent = "(Завантаження...)";
+            
+            try {
+                const response = await fetch(SCRIPT_URL);
+                inventoryData = await response.json();
+                indicator.textContent = "";
+                updateItemsDropdown();
+            } catch (err) {
+                indicator.textContent = "(Помилка)";
+                itemSelect.innerHTML = '<option value="">Помилка завантаження. Спробуйте пізніше.</option>';
+            }
+        }
+
+        function updateItemsDropdown() {
+            const category = document.getElementById('category').value;
+            const itemSelect = document.getElementById('item_name');
+            const unitInput = document.getElementById('unit');
+            
+            // Filter items by selected category
+            const filtered = inventoryData.filter(item => item.category === category);
+            
+            itemSelect.innerHTML = '';
+            if (filtered.length === 0) {
+                itemSelect.innerHTML = '<option value="">Немає товарів у цій категорії</option>';
+                unitInput.value = '';
+                return;
+            }
+
+            filtered.forEach(item => {
+                const opt = document.createElement('option');
+                opt.value = item.name;
+                opt.textContent = item.name;
+                opt.dataset.unit = item.unit;
+                itemSelect.appendChild(opt);
+            });
+
+            // Trigger unit update for the first element
+            updateUnit();
+        }
+
+        function updateUnit() {
+            const itemSelect = document.getElementById('item_name');
+            const unitInput = document.getElementById('unit');
+            if(itemSelect.selectedIndex >= 0) {
+                const selectedOption = itemSelect.options[itemSelect.selectedIndex];
+                unitInput.value = selectedOption.dataset.unit || '';
+            } else {
+                unitInput.value = '';
+            }
+        }
+
+        // Event listeners for dynamic dropdowns
+        document.getElementById('category').addEventListener('change', updateItemsDropdown);
+        document.getElementById('item_name').addEventListener('change', updateUnit);
+
+        // Load data on start
+        loadInventory();
 
         function setAction(action) {
             currentAction = action;
@@ -187,7 +248,6 @@
             }
         }
 
-        // Кнопка відправки
         tg.MainButton.text = "ЗБЕРЕГТИ ДАНІ";
         tg.MainButton.show();
 
@@ -195,14 +255,14 @@
             const data = {
                 action: currentAction,
                 category: document.getElementById('category').value,
-                item_name: document.getElementById('item_name').value.trim(),
+                item_name: document.getElementById('item_name').value,
                 quantity: parseFloat(document.getElementById('quantity').value) || 0,
                 unit: document.getElementById('unit').value,
                 recipient: currentAction === 'issuance' ? document.getElementById('recipient').value.trim() : "Склад"
             };
 
             if (!data.item_name) {
-                tg.showAlert("Будь ласка, введіть назву товару.");
+                tg.showAlert("Будь ласка, оберіть товар.");
                 return;
             }
             if (data.quantity <= 0) {
@@ -214,7 +274,6 @@
                 return;
             }
 
-            // Відправляємо боту
             tg.sendData(JSON.stringify(data));
         });
     </script>
