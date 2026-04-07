@@ -3,283 +3,1266 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
-    <title>Агробот - Склад</title>
+    <title>Агробот — Склад</title>
     <script src="https://telegram.org/js/telegram-web-app.js"></script>
     <style>
+        /* ── Google Fonts ── */
+        @import url('https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap');
+
+        /* ── CSS Variables ── */
         :root {
-            --tg-theme-bg-color: #f3f4f6;
-            --tg-theme-text-color: #111827;
-            --tg-theme-button-color: #10b981;
-            --tg-theme-button-text-color: #ffffff;
-            --card-bg: #ffffff;
-            --border-color: #d1d5db;
+            --bg: #f0f2f5;
+            --card: #ffffff;
+            --border: #e2e8f0;
+            --text-primary: #1a202c;
+            --text-secondary: #718096;
+            --text-muted: #a0aec0;
+            --accent: #2d8653;
+            --accent-light: #e6f4ec;
+            --accent-hover: #236b42;
+            --danger: #e53e3e;
+            --danger-light: #fff5f5;
+            --warning: #d69e2e;
+            --warning-light: #fffff0;
+            --shadow-sm: 0 1px 3px rgba(0,0,0,0.08), 0 1px 2px rgba(0,0,0,0.04);
+            --shadow-md: 0 4px 12px rgba(0,0,0,0.10), 0 2px 4px rgba(0,0,0,0.06);
+            --radius: 14px;
+            --radius-sm: 8px;
+            --input-bg: #f7fafc;
         }
 
-        body.dark-theme {
-            --tg-theme-bg-color: #111827;
-            --tg-theme-text-color: #f9fafb;
-            --tg-theme-button-color: #10b981;
-            --card-bg: #1f2937;
-            --border-color: #374151;
+        body.dark {
+            --bg: #0f1117;
+            --card: #1a1d27;
+            --border: #2d3748;
+            --text-primary: #f0f4f8;
+            --text-secondary: #a0aec0;
+            --text-muted: #718096;
+            --accent: #48bb78;
+            --accent-light: #1a2e22;
+            --accent-hover: #68d391;
+            --danger: #fc8181;
+            --danger-light: #2d1515;
+            --warning: #f6e05e;
+            --warning-light: #2d2900;
+            --shadow-sm: 0 1px 3px rgba(0,0,0,0.3);
+            --shadow-md: 0 4px 12px rgba(0,0,0,0.4);
+            --input-bg: #232636;
+        }
+
+        * {
+            box-sizing: border-box;
+            margin: 0;
+            padding: 0;
+            -webkit-tap-highlight-color: transparent;
         }
 
         body {
-            font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Helvetica, Arial, sans-serif;
-            background-color: var(--tg-theme-bg-color);
-            color: var(--tg-theme-text-color);
-            margin: 0;
-            padding: 16px;
-            padding-bottom: 80px; /* space for main button if not native */
+            font-family: 'Inter', -apple-system, BlinkMacSystemFont, sans-serif;
+            background-color: var(--bg);
+            color: var(--text-primary);
+            min-height: 100vh;
+            padding-bottom: 100px;
+            transition: background-color 0.2s, color 0.2s;
         }
 
-        h2 {
-            margin-top: 0;
-            margin-bottom: 20px;
-            font-size: 22px;
+        /* ── Header ── */
+        .app-header {
+            background: var(--card);
+            border-bottom: 1px solid var(--border);
+            padding: 14px 16px 0;
+            position: sticky;
+            top: 0;
+            z-index: 100;
+            box-shadow: var(--shadow-sm);
+        }
+
+        .app-header h1 {
+            font-size: 18px;
             font-weight: 700;
+            color: var(--text-primary);
+            display: flex;
+            align-items: center;
+            gap: 8px;
+            margin-bottom: 12px;
         }
 
-        .card {
-            background-color: var(--card-bg);
-            border-radius: 12px;
+        .app-header h1 .icon {
+            width: 32px;
+            height: 32px;
+            background: linear-gradient(135deg, var(--accent), var(--accent-hover));
+            border-radius: 8px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-size: 17px;
+        }
+
+        /* ── Tab Navigation ── */
+        .tabs {
+            display: flex;
+            gap: 0;
+        }
+
+        .tab-btn {
+            flex: 1;
+            border: none;
+            background: none;
+            color: var(--text-muted);
+            font-family: inherit;
+            font-size: 13px;
+            font-weight: 600;
+            padding: 10px 8px 12px;
+            cursor: pointer;
+            position: relative;
+            transition: color 0.2s;
+            white-space: nowrap;
+        }
+
+        .tab-btn.active {
+            color: var(--accent);
+        }
+
+        .tab-btn::after {
+            content: '';
+            position: absolute;
+            bottom: 0;
+            left: 10%;
+            width: 80%;
+            height: 3px;
+            background: var(--accent);
+            border-radius: 3px 3px 0 0;
+            transform: scaleX(0);
+            transition: transform 0.25s cubic-bezier(0.34, 1.56, 0.64, 1);
+        }
+
+        .tab-btn.active::after {
+            transform: scaleX(1);
+        }
+
+        /* ── Content Panels ── */
+        .panel {
+            display: none;
             padding: 16px;
-            margin-bottom: 16px;
-            box-shadow: 0 1px 3px rgba(0, 0, 0, 0.1);
+            animation: fadeIn 0.2s ease;
         }
 
-        .form-group {
-            margin-bottom: 16px;
+        .panel.active {
+            display: block;
         }
 
-        .form-group:last-child {
+        @keyframes fadeIn {
+            from { opacity: 0; transform: translateY(6px); }
+            to   { opacity: 1; transform: translateY(0); }
+        }
+
+        /* ── Cards ── */
+        .card {
+            background: var(--card);
+            border-radius: var(--radius);
+            padding: 16px;
+            margin-bottom: 12px;
+            box-shadow: var(--shadow-sm);
+            border: 1px solid var(--border);
+        }
+
+        .card-title {
+            font-size: 12px;
+            font-weight: 600;
+            text-transform: uppercase;
+            letter-spacing: 0.06em;
+            color: var(--text-muted);
+            margin-bottom: 12px;
+        }
+
+        /* ── Form Elements ── */
+        .field {
+            margin-bottom: 14px;
+        }
+
+        .field:last-child {
             margin-bottom: 0;
         }
 
-        label {
+        .field label {
             display: block;
-            font-size: 14px;
+            font-size: 13px;
             font-weight: 600;
-            margin-bottom: 8px;
-            color: #6b7280;
+            color: var(--text-secondary);
+            margin-bottom: 6px;
         }
 
-        .dark-theme label {
-            color: #9ca3af;
+        .field label .badge {
+            display: inline-block;
+            background: var(--accent-light);
+            color: var(--accent);
+            font-size: 11px;
+            font-weight: 700;
+            padding: 1px 6px;
+            border-radius: 20px;
+            margin-left: 6px;
+            vertical-align: middle;
         }
 
-        select, input {
+        select, input[type="number"], input[type="text"] {
             width: 100%;
-            padding: 12px;
-            border-radius: 8px;
-            border: 1px solid var(--border-color);
-            background: transparent;
-            color: var(--tg-theme-text-color);
-            font-size: 16px;
-            box-sizing: border-box;
+            padding: 11px 14px;
+            border-radius: var(--radius-sm);
+            border: 1.5px solid var(--border);
+            background: var(--input-bg);
+            color: var(--text-primary);
+            font-family: inherit;
+            font-size: 15px;
             outline: none;
-            transition: border-color 0.2s;
+            transition: border-color 0.2s, box-shadow 0.2s;
+            appearance: none;
+        }
+
+        select {
+            background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='12' height='8' viewBox='0 0 12 8'%3E%3Cpath fill='%23718096' d='M1 1l5 5 5-5'/%3E%3C/svg%3E");
+            background-repeat: no-repeat;
+            background-position: right 14px center;
+            padding-right: 36px;
+        }
+
+        body.dark select {
+            background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='12' height='8' viewBox='0 0 12 8'%3E%3Cpath fill='%23a0aec0' d='M1 1l5 5 5-5'/%3E%3C/svg%3E");
         }
 
         select:focus, input:focus {
-            border-color: var(--tg-theme-button-color);
+            border-color: var(--accent);
+            box-shadow: 0 0 0 3px rgba(45, 134, 83, 0.15);
         }
 
-        .action-tabs {
+        select option {
+            background: var(--card);
+            color: var(--text-primary);
+        }
+
+        /* ── Info Banner (balance) ── */
+        .balance-banner {
+            display: none;
+            align-items: center;
+            justify-content: space-between;
+            background: var(--accent-light);
+            border: 1px solid var(--accent);
+            border-radius: var(--radius-sm);
+            padding: 10px 14px;
+            margin-top: 10px;
+        }
+
+        .balance-banner.visible {
             display: flex;
-            gap: 10px;
-            margin-bottom: 16px;
         }
 
-        .tab {
-            flex: 1;
-            text-align: center;
-            padding: 12px;
-            background: var(--card-bg);
-            border: 1px solid var(--border-color);
-            border-radius: 8px;
-            font-weight: bold;
+        .balance-banner .lbl {
+            font-size: 12px;
+            color: var(--accent);
+            font-weight: 500;
+        }
+
+        .balance-banner .val {
+            font-size: 16px;
+            font-weight: 700;
+            color: var(--accent);
+        }
+
+        .balance-banner.low {
+            background: var(--warning-light);
+            border-color: var(--warning);
+        }
+
+        .balance-banner.low .lbl,
+        .balance-banner.low .val {
+            color: var(--warning);
+        }
+
+        .balance-banner.empty {
+            background: var(--danger-light);
+            border-color: var(--danger);
+        }
+
+        .balance-banner.empty .lbl,
+        .balance-banner.empty .val {
+            color: var(--danger);
+        }
+
+        /* ── New Item Toggle ── */
+        .toggle-new-item {
+            display: flex;
+            align-items: center;
+            gap: 8px;
+            margin-top: 10px;
             cursor: pointer;
-            transition: 0.2s;
+            color: var(--accent);
+            font-size: 13px;
+            font-weight: 600;
+            user-select: none;
         }
 
-        .tab.active {
-            background: var(--tg-theme-button-color);
-            color: var(--tg-theme-button-text-color);
-            border-color: var(--tg-theme-button-color);
+        .toggle-new-item svg {
+            width: 16px;
+            height: 16px;
+            transition: transform 0.2s;
         }
 
+        .toggle-new-item.open svg {
+            transform: rotate(45deg);
+        }
+
+        .new-item-fields {
+            display: none;
+            margin-top: 10px;
+            padding: 12px;
+            background: var(--input-bg);
+            border-radius: var(--radius-sm);
+            border: 1px dashed var(--border);
+            animation: fadeIn 0.2s ease;
+        }
+
+        .new-item-fields.visible {
+            display: block;
+        }
+
+        /* ── Date Field ── */
+        input[type="date"] {
+            width: 100%;
+            padding: 11px 14px;
+            border-radius: var(--radius-sm);
+            border: 1.5px solid var(--border);
+            background: var(--input-bg);
+            color: var(--text-primary);
+            font-family: inherit;
+            font-size: 15px;
+            outline: none;
+            transition: border-color 0.2s, box-shadow 0.2s;
+        }
+
+        input[type="date"]:focus {
+            border-color: var(--accent);
+            box-shadow: 0 0 0 3px rgba(45, 134, 83, 0.15);
+        }
+
+        /* ── Submit Button ── */
+        .submit-btn {
+            width: 100%;
+            padding: 15px;
+            border: none;
+            border-radius: var(--radius);
+            background: linear-gradient(135deg, var(--accent), var(--accent-hover));
+            color: #fff;
+            font-family: inherit;
+            font-size: 16px;
+            font-weight: 700;
+            cursor: pointer;
+            transition: opacity 0.2s, transform 0.15s;
+            margin-top: 4px;
+            letter-spacing: 0.02em;
+            box-shadow: 0 4px 14px rgba(45, 134, 83, 0.35);
+        }
+
+        .submit-btn:active {
+            opacity: 0.85;
+            transform: scale(0.98);
+        }
+
+        .submit-btn:disabled {
+            opacity: 0.5;
+            cursor: not-allowed;
+            box-shadow: none;
+        }
+
+        /* ── Loading Spinner ── */
+        .loading-state {
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            justify-content: center;
+            padding: 40px 16px;
+            gap: 14px;
+        }
+
+        .spinner {
+            width: 36px;
+            height: 36px;
+            border: 3px solid var(--border);
+            border-top-color: var(--accent);
+            border-radius: 50%;
+            animation: spin 0.7s linear infinite;
+        }
+
+        @keyframes spin {
+            to { transform: rotate(360deg); }
+        }
+
+        .loading-state p {
+            font-size: 14px;
+            color: var(--text-muted);
+        }
+
+        /* ── Balance Panel ── */
+        .balance-search {
+            position: relative;
+            margin-bottom: 12px;
+        }
+
+        .balance-search input {
+            padding-left: 38px;
+        }
+
+        .balance-search .search-icon {
+            position: absolute;
+            left: 12px;
+            top: 50%;
+            transform: translateY(-50%);
+            color: var(--text-muted);
+            pointer-events: none;
+        }
+
+        .category-group {
+            margin-bottom: 12px;
+        }
+
+        .category-header {
+            display: flex;
+            align-items: center;
+            gap: 8px;
+            padding: 8px 12px;
+            background: var(--accent-light);
+            border-radius: var(--radius-sm);
+            margin-bottom: 6px;
+            cursor: pointer;
+        }
+
+        .category-header span {
+            font-size: 13px;
+            font-weight: 700;
+            color: var(--accent);
+            flex: 1;
+        }
+
+        .category-header .cat-count {
+            font-size: 11px;
+            color: var(--accent);
+            opacity: 0.7;
+        }
+
+        .item-row {
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+            padding: 10px 12px;
+            border-radius: var(--radius-sm);
+            background: var(--card);
+            border: 1px solid var(--border);
+            margin-bottom: 4px;
+            transition: background 0.15s;
+        }
+
+        .item-row:last-child {
+            margin-bottom: 0;
+        }
+
+        .item-row .item-name {
+            font-size: 14px;
+            color: var(--text-primary);
+            flex: 1;
+            margin-right: 8px;
+            line-height: 1.3;
+        }
+
+        .item-row .item-balance {
+            font-size: 15px;
+            font-weight: 700;
+            white-space: nowrap;
+        }
+
+        .item-balance.good { color: var(--accent); }
+        .item-balance.low  { color: var(--warning); }
+        .item-balance.zero { color: var(--danger); }
+
+        /* ── Empty & Error States ── */
+        .empty-state {
+            text-align: center;
+            padding: 40px 16px;
+            color: var(--text-muted);
+        }
+
+        .empty-state .emoji {
+            font-size: 40px;
+            margin-bottom: 10px;
+        }
+
+        .empty-state p {
+            font-size: 14px;
+        }
+
+        .error-banner {
+            display: flex;
+            align-items: center;
+            gap: 10px;
+            background: var(--danger-light);
+            border: 1px solid var(--danger);
+            color: var(--danger);
+            border-radius: var(--radius-sm);
+            padding: 12px 14px;
+            font-size: 13px;
+            margin-bottom: 12px;
+        }
+
+        /* ── Category Icons ── */
+        .cat-emoji {
+            font-size: 18px;
+        }
+
+        /* ── Recipient option chips ── */
+        .recipient-toggle {
+            display: flex;
+            gap: 6px;
+            margin-bottom: 10px;
+            flex-wrap: wrap;
+        }
+
+        .rcpt-chip {
+            padding: 6px 14px;
+            border-radius: 20px;
+            border: 1.5px solid var(--border);
+            background: var(--input-bg);
+            color: var(--text-secondary);
+            font-size: 13px;
+            font-weight: 500;
+            cursor: pointer;
+            font-family: inherit;
+            transition: all 0.15s;
+        }
+
+        .rcpt-chip.active {
+            border-color: var(--accent);
+            background: var(--accent-light);
+            color: var(--accent);
+        }
+
+        /* ── Refresh Button ── */
+        .refresh-btn {
+            border: none;
+            background: none;
+            color: var(--accent);
+            font-family: inherit;
+            font-size: 13px;
+            font-weight: 600;
+            cursor: pointer;
+            padding: 4px 8px;
+            border-radius: 6px;
+            display: flex;
+            align-items: center;
+            gap: 4px;
+            transition: background 0.15s;
+        }
+
+        .refresh-btn:hover {
+            background: var(--accent-light);
+        }
+
+        .refresh-btn svg {
+            transition: transform 0.5s;
+        }
+
+        .refresh-btn.spinning svg {
+            animation: spin 0.7s linear infinite;
+        }
+
+        /* ── Panel Header ── */
+        .panel-header {
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+            margin-bottom: 12px;
+        }
+
+        .panel-header-title {
+            font-size: 14px;
+            font-weight: 700;
+            color: var(--text-secondary);
+        }
     </style>
 </head>
 <body>
 
-    <h2>Управління складом</h2>
-
-    <div class="action-tabs">
-        <div class="tab" id="tab_issuance" onclick="setAction('issuance')">📤 Видача</div>
-        <div class="tab active" id="tab_arrival" onclick="setAction('arrival')">📥 Прихід</div>
-    </div>
-
-    <div class="card">
-        <div class="form-group">
-            <label>Категорія</label>
-            <select id="category">
-                <option value="ЗЗР (Пестициди)">ЗЗР (Пестициди)</option>
-                <option value="Добрива">Добрива</option>
-                <option value="ПММ">Паливно-мастильні матеріали</option>
-                <option value="Запчастини">Запчастини</option>
-                <option value="Матеріали">Матеріали</option>
-                <option value="Саджанці">Саджанці</option>
-            </select>
-        </div>
-
-        <div class="form-group">
-            <label>Назва товару/препарату <span id="loading_indicator" style="font-size: 12px; color: var(--tg-theme-button-color);"></span></label>
-            <select id="item_name">
-                <option value="">Завантаження...</option>
-            </select>
+    <!-- App Header + Tabs -->
+    <div class="app-header">
+        <h1>
+            <span class="icon">🏪</span>
+            Склад (TMC)
+        </h1>
+        <div class="tabs" role="tablist">
+            <button class="tab-btn active" id="tab-arrival"   onclick="switchTab('arrival')"   role="tab">📥 Прихід</button>
+            <button class="tab-btn"       id="tab-issuance"  onclick="switchTab('issuance')"  role="tab">📤 Видача</button>
+            <button class="tab-btn"       id="tab-balance"   onclick="switchTab('balance')"   role="tab">📊 Залишки</button>
         </div>
     </div>
 
-    <div class="card">
-        <div class="form-group">
-            <label id="qty_label">Кількість</label>
-            <input type="number" id="quantity" placeholder="0.00" step="0.01">
-            <input type="hidden" id="unit" value="">
+    <!-- ═══ ARRIVAL PANEL ═══════════════════════════════════════════════════════ -->
+    <div class="panel active" id="panel-arrival">
+
+        <div id="arrival-loading" class="loading-state">
+            <div class="spinner"></div>
+            <p>Завантаження даних складу...</p>
+        </div>
+
+        <div id="arrival-error" class="error-banner" style="display:none;">
+            ⚠️ Не вдалось завантажити дані. <button class="refresh-btn" onclick="loadInventory()" style="margin-left:auto">Повторити</button>
+        </div>
+
+        <div id="arrival-form" style="display:none;">
+
+            <div class="card">
+                <div class="card-title">Що надходить</div>
+
+                <div class="field">
+                    <label>Категорія</label>
+                    <select id="arr-category" onchange="onArrivalCategoryChange()">
+                        <option value="">— оберіть —</option>
+                    </select>
+                </div>
+
+                <div class="field" id="arr-item-field" style="display:none;">
+                    <label>Назва товару / препарату</label>
+                    <select id="arr-item" onchange="onArrivalItemChange()">
+                        <option value="">— оберіть —</option>
+                    </select>
+
+                    <!-- New item toggle (arrival only) -->
+                    <div class="toggle-new-item" id="arr-toggle-new" onclick="toggleNewItem()" style="display:none;">
+                        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><line x1="12" y1="5" x2="12" y2="19"/><line x1="5" y1="12" x2="19" y2="12"/></svg>
+                        Додати новий товар
+                    </div>
+
+                    <div class="new-item-fields" id="arr-new-item-fields">
+                        <div class="field">
+                            <label>Назва нового товару</label>
+                            <input type="text" id="arr-new-name" placeholder="напр. Мікровит Мікро Купрум">
+                        </div>
+                        <div class="field">
+                            <label>Одиниця виміру</label>
+                            <input type="text" id="arr-new-unit" placeholder="л / кг / шт / т / уп">
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <div class="card" id="arr-qty-card" style="display:none;">
+                <div class="card-title">Кількість та дата</div>
+
+                <div class="field">
+                    <label id="arr-qty-label">Кількість</label>
+                    <input type="number" id="arr-quantity" placeholder="0.00" step="0.01" min="0.01" inputmode="decimal">
+                </div>
+
+                <div class="field">
+                    <label>Дата надходження</label>
+                    <input type="date" id="arr-date">
+                </div>
+            </div>
+
+            <button class="submit-btn" id="arr-submit-btn" onclick="submitArrival()">
+                ✅ Записати прихід
+            </button>
         </div>
     </div>
 
-    <div class="card" id="recipient_card" style="display: none;">
-        <div class="form-group">
-            <label>Кому видано (Тракторист / Поле)</label>
-            <input type="text" id="recipient" placeholder="Введіть ПІБ або локацію">
+    <!-- ═══ ISSUANCE PANEL ══════════════════════════════════════════════════════ -->
+    <div class="panel" id="panel-issuance">
+
+        <div id="issuance-loading" class="loading-state">
+            <div class="spinner"></div>
+            <p>Завантаження даних складу...</p>
+        </div>
+
+        <div id="issuance-error" class="error-banner" style="display:none;">
+            ⚠️ Не вдалось завантажити дані. <button class="refresh-btn" onclick="loadInventory()" style="margin-left:auto">Повторити</button>
+        </div>
+
+        <div id="issuance-form" style="display:none;">
+
+            <div class="card">
+                <div class="card-title">Що видається</div>
+
+                <div class="field">
+                    <label>Категорія</label>
+                    <select id="iss-category" onchange="onIssuanceCategoryChange()">
+                        <option value="">— оберіть —</option>
+                    </select>
+                </div>
+
+                <div class="field" id="iss-item-field" style="display:none;">
+                    <label>Назва товару / препарату</label>
+                    <select id="iss-item" onchange="onIssuanceItemChange()">
+                        <option value="">— оберіть —</option>
+                    </select>
+
+                    <div class="balance-banner" id="iss-balance-banner">
+                        <span class="lbl">Залишок на складі:</span>
+                        <span class="val" id="iss-balance-val">—</span>
+                    </div>
+                </div>
+            </div>
+
+            <div class="card" id="iss-qty-card" style="display:none;">
+                <div class="card-title">Кількість та дата</div>
+
+                <div class="field">
+                    <label id="iss-qty-label">Кількість</label>
+                    <input type="number" id="iss-quantity" placeholder="0.00" step="0.01" min="0.01" inputmode="decimal">
+                </div>
+
+                <div class="field">
+                    <label>Дата видачі</label>
+                    <input type="date" id="iss-date">
+                </div>
+            </div>
+
+            <div class="card" id="iss-recipient-card" style="display:none;">
+                <div class="card-title">Отримувач</div>
+
+                <div class="recipient-toggle" id="rcpt-toggle">
+                    <button class="rcpt-chip active" onclick="setRecipientMode('select')" id="chip-select">Зі списку</button>
+                    <button class="rcpt-chip" onclick="setRecipientMode('manual')" id="chip-manual">Вручну</button>
+                </div>
+
+                <div class="field" id="rcpt-select-field">
+                    <select id="iss-recipient-select">
+                        <option value="">— оберіть отримувача —</option>
+                    </select>
+                </div>
+
+                <div class="field" id="rcpt-manual-field" style="display:none;">
+                    <input type="text" id="iss-recipient-text" placeholder="Введіть ПІБ або локацію">
+                </div>
+            </div>
+
+            <button class="submit-btn" id="iss-submit-btn" onclick="submitIssuance()">
+                ✅ Записати видачу
+            </button>
+        </div>
+    </div>
+
+    <!-- ═══ BALANCE PANEL ═══════════════════════════════════════════════════════ -->
+    <div class="panel" id="panel-balance">
+
+        <div id="balance-loading" class="loading-state">
+            <div class="spinner"></div>
+            <p>Завантаження залишків...</p>
+        </div>
+
+        <div id="balance-error" class="error-banner" style="display:none;">
+            ⚠️ Не вдалось завантажити дані. <button class="refresh-btn" onclick="reloadBalance()" style="margin-left:auto">Повторити</button>
+        </div>
+
+        <div id="balance-content" style="display:none;">
+            <div class="panel-header">
+                <span class="panel-header-title">Поточні залишки</span>
+                <button class="refresh-btn" id="balance-refresh-btn" onclick="reloadBalance()">
+                    <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5">
+                        <path d="M23 4v6h-6"/><path d="M1 20v-6h6"/>
+                        <path d="M3.51 9a9 9 0 0 1 14.85-3.36L23 10M1 14l4.64 4.36A9 9 0 0 0 20.49 15"/>
+                    </svg>
+                    Оновити
+                </button>
+            </div>
+
+            <div class="balance-search">
+                <svg class="search-icon" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                    <circle cx="11" cy="11" r="8"/><line x1="21" y1="21" x2="16.65" y2="16.65"/>
+                </svg>
+                <input type="text" id="balance-search" placeholder="Пошук товару..." oninput="filterBalanceList()">
+            </div>
+
+            <div id="balance-list"></div>
         </div>
     </div>
 
     <script>
-        const tg = window.Telegram.WebApp;
-        tg.expand(); 
+    // ── Telegram WebApp Init ─────────────────────────────────────────────────
+    const tg = window.Telegram.WebApp;
+    tg.ready();
+    tg.expand();
 
-        if (tg.colorScheme === 'dark') {
-            document.body.classList.add('dark-theme');
+    if (tg.colorScheme === 'dark') {
+        document.body.classList.add('dark');
+    }
+
+    // ── API Endpoint ─────────────────────────────────────────────────────────
+    const SCRIPT_URL = 'https://script.google.com/macros/s/AKfycbyIrHEqyg_84TioXK6AYIMUL9ENn7LhmPFqfA88hLdUQhoqVRKPlqtB0uLxPqsMwt6d/exec';
+
+    // ── State ─────────────────────────────────────────────────────────────────
+    let inventoryData = [];
+    let loadError     = false;
+    let currentTab    = 'arrival';
+    let recipientMode = 'select';
+
+    const CAT_ICONS = {
+        'ПММ'           : '⛽',
+        'ЗЗР (Пестициди)': '🧪',
+        'Добрива'       : '🌱',
+        'Запчастини'    : '🔧',
+        'Саджанці'      : '🌿',
+        'Матеріали'     : '📦',
+    };
+
+    // ── Today's date in yyyy-mm-dd for date inputs ────────────────────────────
+    function todayISO() {
+        const d = new Date();
+        return d.toISOString().split('T')[0];
+    }
+
+    // Set today's date on both date inputs
+    document.getElementById('arr-date').value = todayISO();
+    document.getElementById('iss-date').value = todayISO();
+
+    // ── Tab Switching ─────────────────────────────────────────────────────────
+    function switchTab(tab) {
+        currentTab = tab;
+        document.querySelectorAll('.tab-btn').forEach(b => b.classList.remove('active'));
+        document.querySelectorAll('.panel').forEach(p => p.classList.remove('active'));
+        document.getElementById('tab-'   + tab).classList.add('active');
+        document.getElementById('panel-' + tab).classList.add('active');
+
+        if (tab === 'balance') {
+            renderBalancePanel();
         }
+    }
 
-        let currentAction = 'arrival';
-        let inventoryData = [];
+    // ── Load inventory from GAS ───────────────────────────────────────────────
+    async function loadInventory() {
+        loadError = false;
+        showArrivalLoading(true);
+        showIssuanceLoading(true);
 
-        // Fetch data from Google Apps Script
-        const SCRIPT_URL = 'https://script.google.com/macros/s/AKfycbySg13GfDilR3CYva2d-6QmjAlWmY4aQOkS3C7LwRyrFPsO_lUn_e15tWefbBca6A8u/exec';
-        
-        async function loadInventory() {
-            const indicator = document.getElementById('loading_indicator');
-            const itemSelect = document.getElementById('item_name');
-            indicator.textContent = "(Завантаження...)";
-            
-            try {
-                const response = await fetch(SCRIPT_URL);
-                inventoryData = await response.json();
-                indicator.textContent = "";
-                updateItemsDropdown();
-            } catch (err) {
-                indicator.textContent = "(Помилка)";
-                itemSelect.innerHTML = '<option value="">Помилка завантаження. Спробуйте пізніше.</option>';
-            }
-        }
+        try {
+            const res  = await fetch(SCRIPT_URL);
+            const json = await res.json();
 
-        function updateItemsDropdown() {
-            const category = document.getElementById('category').value;
-            const itemSelect = document.getElementById('item_name');
-            const unitInput = document.getElementById('unit');
-            
-            // Filter items by selected category
-            const filtered = inventoryData.filter(item => item.category === category);
-            
-            itemSelect.innerHTML = '';
-            if (filtered.length === 0) {
-                itemSelect.innerHTML = '<option value="">Немає товарів у цій категорії</option>';
-                unitInput.value = '';
-                return;
-            }
-
-            filtered.forEach(item => {
-                const opt = document.createElement('option');
-                opt.value = item.name;
-                opt.textContent = item.name;
-                opt.dataset.unit = item.unit;
-                itemSelect.appendChild(opt);
+            // New GAS returns {category, name, unit (string), balance (number)}
+            // Old GAS returned {category, name, unit (number = balance)} — keep fallback
+            inventoryData = json.map(item => {
+                const hasProperBalance = typeof item.balance === 'number' || (item.balance !== undefined && item.balance !== '');
+                return {
+                    category : item.category,
+                    name     : item.name,
+                    unit     : hasProperBalance ? (item.unit || '') : '',
+                    balance  : hasProperBalance
+                                ? (parseFloat(item.balance) || 0)
+                                : (parseFloat(item.unit)    || 0),
+                };
             });
 
-            // Trigger unit update for the first element
-            updateUnit();
+            populateArrivalForm();
+            populateIssuanceForm();
+        } catch (e) {
+            loadError = true;
+            document.getElementById('arrival-loading').style.display  = 'none';
+            document.getElementById('arrival-error').style.display    = 'flex';
+            document.getElementById('issuance-loading').style.display = 'none';
+            document.getElementById('issuance-error').style.display   = 'flex';
         }
+    }
 
-        function updateUnit() {
-            const itemSelect = document.getElementById('item_name');
-            const unitInput = document.getElementById('unit');
-            const qtyLabel = document.getElementById('qty_label');
-            
-            if(itemSelect.selectedIndex >= 0) {
-                const selectedOption = itemSelect.options[itemSelect.selectedIndex];
-                const u = selectedOption.dataset.unit || '';
-                unitInput.value = u;
-                if (u) {
-                    qtyLabel.textContent = `Кількість (${u})`;
-                } else {
-                    qtyLabel.textContent = `Кількість`;
-                }
-            } else {
-                unitInput.value = '';
-                qtyLabel.textContent = `Кількість`;
-            }
-        }
+    function showArrivalLoading(show) {
+        document.getElementById('arrival-loading').style.display = show ? 'flex' : 'none';
+        document.getElementById('arrival-form').style.display    = show ? 'none' : 'block';
+    }
 
-        // Event listeners for dynamic dropdowns
-        document.getElementById('category').addEventListener('change', updateItemsDropdown);
-        document.getElementById('item_name').addEventListener('change', updateUnit);
+    function showIssuanceLoading(show) {
+        document.getElementById('issuance-loading').style.display = show ? 'flex' : 'none';
+        document.getElementById('issuance-form').style.display    = show ? 'none' : 'block';
+    }
 
-        // Load data on start
-        loadInventory();
+    // ── Unique categories ─────────────────────────────────────────────────────
+    function getCategories() {
+        return [...new Set(inventoryData.map(i => i.category))];
+    }
 
-        function setAction(action) {
-            currentAction = action;
-            document.getElementById('tab_arrival').classList.remove('active');
-            document.getElementById('tab_issuance').classList.remove('active');
-            document.getElementById('tab_' + action).classList.add('active');
-
-            if (action === 'issuance') {
-                document.getElementById('recipient_card').style.display = 'block';
-            } else {
-                document.getElementById('recipient_card').style.display = 'none';
-            }
-        }
-
-        tg.MainButton.text = "ЗБЕРЕГТИ ДАНІ";
-        tg.MainButton.show();
-
-        tg.MainButton.onClick(() => {
-            const data = {
-                action: currentAction,
-                category: document.getElementById('category').value,
-                item_name: document.getElementById('item_name').value,
-                quantity: parseFloat(document.getElementById('quantity').value) || 0,
-                unit: document.getElementById('unit').value,
-                recipient: currentAction === 'issuance' ? document.getElementById('recipient').value.trim() : "Склад"
-            };
-
-            if (!data.item_name) {
-                tg.showAlert("Будь ласка, оберіть товар.");
-                return;
-            }
-            if (data.quantity <= 0) {
-                tg.showAlert("Кількість має бути більшою за нуль.");
-                return;
-            }
-            if (currentAction === 'issuance' && !data.recipient) {
-                tg.showAlert("Вкажіть, кому видано товар.");
-                return;
-            }
-
-            tg.sendData(JSON.stringify(data));
+    function fillCategorySelect(selectId) {
+        const sel = document.getElementById(selectId);
+        sel.innerHTML = '<option value="">— оберіть —</option>';
+        getCategories().forEach(cat => {
+            const opt = document.createElement('option');
+            opt.value       = cat;
+            opt.textContent = (CAT_ICONS[cat] || '📦') + '  ' + cat;
+            sel.appendChild(opt);
         });
+    }
+
+    // ── ARRIVAL: Populate ─────────────────────────────────────────────────────
+    function populateArrivalForm() {
+        document.getElementById('arrival-error').style.display = 'none';
+        fillCategorySelect('arr-category');
+        showArrivalLoading(false);
+    }
+
+    function onArrivalCategoryChange() {
+        const cat = document.getElementById('arr-category').value;
+
+        // Reset new-item panel
+        closeNewItemPanel();
+
+        const itemField = document.getElementById('arr-item-field');
+        const qtyCard   = document.getElementById('arr-qty-card');
+
+        if (!cat) {
+            itemField.style.display = 'none';
+            qtyCard.style.display   = 'none';
+            return;
+        }
+
+        // Populate items
+        const items = inventoryData.filter(i => i.category === cat);
+        const sel   = document.getElementById('arr-item');
+        sel.innerHTML = '<option value="">— оберіть товар —</option>';
+        items.forEach(item => {
+            const opt = document.createElement('option');
+            opt.value       = item.name;
+            opt.textContent = item.name;
+            opt.dataset.balance = item.balance;
+            opt.dataset.unit    = item.unit;
+            sel.appendChild(opt);
+        });
+
+        document.getElementById('arr-toggle-new').style.display = 'flex';
+        itemField.style.display = 'block';
+        qtyCard.style.display   = 'none';
+        updateArrivalQtyLabel();
+    }
+
+    function onArrivalItemChange() {
+        const sel = document.getElementById('arr-item');
+        const cat = document.getElementById('arr-category').value;
+        if (sel.value) {
+            document.getElementById('arr-qty-card').style.display = 'block';
+        }
+        updateArrivalQtyLabel();
+        closeNewItemPanel();
+    }
+
+    function updateArrivalQtyLabel() {
+        const sel  = document.getElementById('arr-item');
+        const lbl  = document.getElementById('arr-qty-label');
+        if (!sel || !sel.value || sel.selectedIndex <= 0) {
+            lbl.textContent = 'Кількість';
+            return;
+        }
+        const u = sel.options[sel.selectedIndex].dataset.unit;
+        lbl.textContent = u ? `Кількість (${u})` : 'Кількість';
+    }
+
+    // ── New item panel ────────────────────────────────────────────────────────
+    let newItemOpen = false;
+
+    function toggleNewItem() {
+        newItemOpen = !newItemOpen;
+        const toggle = document.getElementById('arr-toggle-new');
+        const fields = document.getElementById('arr-new-item-fields');
+        const qtyCard = document.getElementById('arr-qty-card');
+
+        toggle.classList.toggle('open', newItemOpen);
+        fields.classList.toggle('visible', newItemOpen);
+
+        if (newItemOpen) {
+            // Clear item select and show qty
+            document.getElementById('arr-item').value = '';
+            document.getElementById('arr-item').disabled = true;
+            qtyCard.style.display = 'block';
+        } else {
+            document.getElementById('arr-item').disabled = false;
+            if (!document.getElementById('arr-item').value) {
+                qtyCard.style.display = 'none';
+            }
+        }
+    }
+
+    function closeNewItemPanel() {
+        newItemOpen = false;
+        document.getElementById('arr-toggle-new').classList.remove('open');
+        document.getElementById('arr-new-item-fields').classList.remove('visible');
+        const itemSel = document.getElementById('arr-item');
+        if (itemSel) itemSel.disabled = false;
+    }
+
+    // ── ISSUANCE: Populate ────────────────────────────────────────────────────
+    function populateIssuanceForm() {
+        document.getElementById('issuance-error').style.display = 'none';
+        fillCategorySelect('iss-category');
+        showIssuanceLoading(false);
+    }
+
+    function onIssuanceCategoryChange() {
+        const cat = document.getElementById('iss-category').value;
+
+        const itemField    = document.getElementById('iss-item-field');
+        const qtyCard      = document.getElementById('iss-qty-card');
+        const recipCard    = document.getElementById('iss-recipient-card');
+        const balanceBanner = document.getElementById('iss-balance-banner');
+
+        balanceBanner.className = 'balance-banner';
+
+        if (!cat) {
+            itemField.style.display    = 'none';
+            qtyCard.style.display      = 'none';
+            recipCard.style.display    = 'none';
+            return;
+        }
+
+        const items = inventoryData.filter(i => i.category === cat);
+        const sel   = document.getElementById('iss-item');
+        sel.innerHTML = '<option value="">— оберіть товар —</option>';
+        items.forEach(item => {
+            const opt = document.createElement('option');
+            opt.value       = item.name;
+            opt.textContent = item.name;
+            opt.dataset.balance = item.balance;
+            opt.dataset.unit    = item.unit;
+            sel.appendChild(opt);
+        });
+
+        itemField.style.display = 'block';
+        qtyCard.style.display   = 'none';
+        recipCard.style.display = 'none';
+    }
+
+    function onIssuanceItemChange() {
+        const sel     = document.getElementById('iss-item');
+        const qtyCard = document.getElementById('iss-qty-card');
+        const recipCard = document.getElementById('iss-recipient-card');
+        const banner   = document.getElementById('iss-balance-banner');
+        const balVal   = document.getElementById('iss-balance-val');
+        const qtyLabel = document.getElementById('iss-qty-label');
+
+        if (!sel.value) {
+            banner.className = 'balance-banner';
+            qtyCard.style.display   = 'none';
+            recipCard.style.display = 'none';
+            return;
+        }
+
+        const opt     = sel.options[sel.selectedIndex];
+        const balance = parseFloat(opt.dataset.balance) || 0;
+        const unit    = opt.dataset.unit || '';
+
+        // Show balance banner with color coding
+        const displayBalance = balance + (unit ? ' ' + unit : '');
+        balVal.textContent = displayBalance;
+        banner.className   = 'balance-banner visible';
+        if (balance <= 0)     banner.className += ' empty';
+        else if (balance < 10) banner.className += ' low';
+
+        qtyLabel.textContent = unit ? `Кількість (${unit})` : 'Кількість';
+        qtyCard.style.display   = 'block';
+        recipCard.style.display = 'block';
+    }
+
+    // ── Recipient mode ────────────────────────────────────────────────────────
+    function setRecipientMode(mode) {
+        recipientMode = mode;
+        document.getElementById('chip-select').classList.toggle('active', mode === 'select');
+        document.getElementById('chip-manual').classList.toggle('active', mode === 'manual');
+        document.getElementById('rcpt-select-field').style.display = mode === 'select' ? 'block' : 'none';
+        document.getElementById('rcpt-manual-field').style.display = mode === 'manual' ? 'block' : 'none';
+    }
+
+    // ── Submit Arrival ────────────────────────────────────────────────────────
+    function submitArrival() {
+        const cat      = document.getElementById('arr-category').value;
+        const qty      = parseFloat(document.getElementById('arr-quantity').value);
+        const date     = document.getElementById('arr-date').value;
+
+        if (!cat) { tg.showAlert('Оберіть категорію.'); return; }
+
+        let itemName, unit;
+
+        if (newItemOpen) {
+            itemName = document.getElementById('arr-new-name').value.trim();
+            unit     = document.getElementById('arr-new-unit').value.trim();
+            if (!itemName) { tg.showAlert('Введіть назву нового товару.'); return; }
+            if (!unit)     { tg.showAlert('Введіть одиницю виміру.'); return; }
+        } else {
+            const sel = document.getElementById('arr-item');
+            itemName  = sel.value;
+            unit      = sel.selectedIndex > 0 ? sel.options[sel.selectedIndex].dataset.unit : '';
+            if (!itemName) { tg.showAlert('Оберіть товар зі списку або додайте новий.'); return; }
+        }
+
+        if (!qty || qty <= 0) { tg.showAlert('Вкажіть кількість (більше нуля).'); return; }
+        if (!date)           { tg.showAlert('Оберіть дату.'); return; }
+
+        const payload = {
+            action   : 'arrival',
+            category : cat,
+            item_name: itemName,
+            quantity : qty,
+            unit     : unit,
+            recipient: 'Склад',
+            date     : date,
+            is_new   : newItemOpen,
+        };
+
+        disableBtn('arr-submit-btn', true);
+        tg.sendData(JSON.stringify(payload));
+    }
+
+    // ── Submit Issuance ───────────────────────────────────────────────────────
+    function submitIssuance() {
+        const cat  = document.getElementById('iss-category').value;
+        const sel  = document.getElementById('iss-item');
+        const item = sel.value;
+        const qty  = parseFloat(document.getElementById('iss-quantity').value);
+        const date = document.getElementById('iss-date').value;
+
+        if (!cat)  { tg.showAlert('Оберіть категорію.'); return; }
+        if (!item) { tg.showAlert('Оберіть товар.'); return; }
+        if (!qty || qty <= 0) { tg.showAlert('Вкажіть кількість (більше нуля).'); return; }
+        if (!date) { tg.showAlert('Оберіть дату.'); return; }
+
+        // Balance check
+        const opt     = sel.options[sel.selectedIndex];
+        const balance = parseFloat(opt.dataset.balance) || 0;
+        const unit    = opt.dataset.unit || '';
+        if (qty > balance && balance > 0) {
+            tg.showAlert(`⛔ Недостатньо! Доступно лише ${balance}${unit ? ' ' + unit : ''}.`);
+            return;
+        }
+
+        let recipient;
+        if (recipientMode === 'select') {
+            recipient = document.getElementById('iss-recipient-select').value;
+            if (!recipient) { tg.showAlert('Оберіть отримувача зі списку.'); return; }
+        } else {
+            recipient = document.getElementById('iss-recipient-text').value.trim();
+            if (!recipient) { tg.showAlert('Введіть ПІБ або назву отримувача.'); return; }
+        }
+
+        const payload = {
+            action   : 'issuance',
+            category : cat,
+            item_name: item,
+            quantity : qty,
+            unit     : unit,
+            recipient: recipient,
+            date     : date,
+        };
+
+        disableBtn('iss-submit-btn', true);
+        tg.sendData(JSON.stringify(payload));
+    }
+
+    // ── Balance Panel ─────────────────────────────────────────────────────────
+    function renderBalancePanel() {
+        if (loadError || inventoryData.length === 0) {
+            document.getElementById('balance-loading').style.display = 'none';
+            if (loadError) {
+                document.getElementById('balance-error').style.display = 'flex';
+            } else {
+                document.getElementById('balance-loading').style.display = 'flex';
+            }
+            return;
+        }
+        document.getElementById('balance-loading').style.display = 'none';
+        document.getElementById('balance-content').style.display = 'block';
+        renderBalanceList(inventoryData);
+    }
+
+    function renderBalanceList(data) {
+        const container = document.getElementById('balance-list');
+        container.innerHTML = '';
+
+        if (data.length === 0) {
+            container.innerHTML = '<div class="empty-state"><div class="emoji">📭</div><p>Нічого не знайдено</p></div>';
+            return;
+        }
+
+        // Group by category
+        const cats = [...new Set(data.map(i => i.category))];
+        cats.forEach(cat => {
+            const items = data.filter(i => i.category === cat);
+            const group = document.createElement('div');
+            group.className = 'category-group';
+
+            const header = document.createElement('div');
+            header.className = 'category-header';
+            header.innerHTML = `
+                <span class="cat-emoji">${CAT_ICONS[cat] || '📦'}</span>
+                <span>${cat}</span>
+                <span class="cat-count">${items.length} поз.</span>
+            `;
+            group.appendChild(header);
+
+            items.forEach(item => {
+                const row = document.createElement('div');
+                row.className = 'item-row';
+                const cls = item.balance <= 0 ? 'zero' : item.balance < 10 ? 'low' : 'good';
+                const unitHtml = item.unit
+                    ? `<span style="font-size:11px;font-weight:500;opacity:0.7;margin-left:3px;">${item.unit}</span>`
+                    : '';
+                row.innerHTML = `
+                    <span class="item-name">${item.name}</span>
+                    <span class="item-balance ${cls}">${item.balance}${unitHtml}</span>
+                `;
+                group.appendChild(row);
+            });
+
+            container.appendChild(group);
+        });
+    }
+
+    function filterBalanceList() {
+        const q    = document.getElementById('balance-search').value.toLowerCase().trim();
+        const data = q
+            ? inventoryData.filter(i => i.name.toLowerCase().includes(q) || i.category.toLowerCase().includes(q))
+            : inventoryData;
+        renderBalanceList(data);
+    }
+
+    async function reloadBalance() {
+        const btn = document.getElementById('balance-refresh-btn');
+        if (btn) btn.classList.add('spinning');
+        await loadInventory();
+        renderBalancePanel();
+        if (btn) btn.classList.remove('spinning');
+    }
+
+    // ── Helpers ───────────────────────────────────────────────────────────────
+    function disableBtn(id, disabled) {
+        const btn = document.getElementById(id);
+        if (btn) btn.disabled = disabled;
+    }
+
+    // ── Init ─────────────────────────────────────────────────────────────────
+    loadInventory();
+
+    // Populate recipients (workers list) - for now a static list
+    // In future: fetch via separate GAS endpoint
+    const KNOWN_RECIPIENTS = [
+        'Трактор МТЗ-1',
+        'Трактор МТЗ-2',
+        'Трактор МТЗ-3',
+        'Трактор МТЗ-4',
+        'Бригада №1',
+        'Бригада №2',
+        'Ломако О.В.',
+        'Іванченко В.П.',
+        'Коваль Д.О.',
+        'Поле — Сад №1',
+        'Поле — Сад №2',
+        'Поле — Сад №3',
+        'Поле — Сад №4',
+        'Поле — Сад №5',
+    ];
+
+    const rcptSel = document.getElementById('iss-recipient-select');
+    KNOWN_RECIPIENTS.forEach(r => {
+        const o = document.createElement('option');
+        o.value = o.textContent = r;
+        rcptSel.appendChild(o);
+    });
     </script>
 </body>
 </html>
