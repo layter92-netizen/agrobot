@@ -1,0 +1,893 @@
+<!DOCTYPE html>
+<html lang="uk">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+    <title>Агробот — Облік праці</title>
+    <script src="https://telegram.org/js/telegram-web-app.js"></script>
+    <style>
+        @import url('https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap');
+
+        :root {
+            --bg: #f0f2f5;
+            --card: #ffffff;
+            --border: #e2e8f0;
+            --text-primary: #1a202c;
+            --text-secondary: #718096;
+            --text-muted: #a0aec0;
+            --accent: #3b6fd4;
+            --accent-light: #ebf0fb;
+            --accent-hover: #2c57b8;
+            --success: #2d8653;
+            --success-light: #e6f4ec;
+            --danger: #e53e3e;
+            --danger-light: #fff5f5;
+            --shadow-sm: 0 1px 3px rgba(0,0,0,0.08);
+            --shadow-md: 0 4px 12px rgba(0,0,0,0.10);
+            --radius: 14px;
+            --radius-sm: 8px;
+            --input-bg: #f7fafc;
+        }
+
+        body.dark {
+            --bg: #0f1117;
+            --card: #1a1d27;
+            --border: #2d3748;
+            --text-primary: #f0f4f8;
+            --text-secondary: #a0aec0;
+            --text-muted: #718096;
+            --accent: #6b9df7;
+            --accent-light: #1a2240;
+            --accent-hover: #5a8af0;
+            --success: #48bb78;
+            --success-light: #1a2e22;
+            --danger: #fc8181;
+            --danger-light: #2d1515;
+            --input-bg: #232636;
+        }
+
+        * { box-sizing: border-box; margin: 0; padding: 0; -webkit-tap-highlight-color: transparent; }
+
+        body {
+            font-family: 'Inter', -apple-system, BlinkMacSystemFont, sans-serif;
+            background: var(--bg);
+            color: var(--text-primary);
+            min-height: 100vh;
+            padding-bottom: 100px;
+        }
+
+        /* ── Header ── */
+        .app-header {
+            background: var(--card);
+            border-bottom: 1px solid var(--border);
+            padding: 14px 16px;
+            position: sticky;
+            top: 0;
+            z-index: 100;
+            box-shadow: var(--shadow-sm);
+            display: flex;
+            align-items: center;
+            gap: 10px;
+        }
+
+        .header-icon {
+            width: 36px;
+            height: 36px;
+            background: linear-gradient(135deg, var(--accent), var(--accent-hover));
+            border-radius: 10px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-size: 18px;
+            flex-shrink: 0;
+        }
+
+        .header-text h1 {
+            font-size: 16px;
+            font-weight: 700;
+            color: var(--text-primary);
+        }
+
+        .header-text p {
+            font-size: 12px;
+            color: var(--text-muted);
+            margin-top: 1px;
+        }
+
+        /* ── Content ── */
+        .content {
+            padding: 16px;
+        }
+
+        /* ── Step indicator ── */
+        .steps-bar {
+            display: flex;
+            gap: 6px;
+            margin-bottom: 16px;
+        }
+
+        .step-dot {
+            height: 4px;
+            flex: 1;
+            border-radius: 4px;
+            background: var(--border);
+            transition: background 0.3s;
+        }
+
+        .step-dot.done  { background: var(--success); }
+        .step-dot.active { background: var(--accent); }
+
+        /* ── Cards ── */
+        .card {
+            background: var(--card);
+            border-radius: var(--radius);
+            padding: 16px;
+            margin-bottom: 12px;
+            border: 1px solid var(--border);
+            box-shadow: var(--shadow-sm);
+        }
+
+        .card-title {
+            font-size: 11px;
+            font-weight: 700;
+            text-transform: uppercase;
+            letter-spacing: 0.07em;
+            color: var(--text-muted);
+            margin-bottom: 12px;
+        }
+
+        /* ── Fields ── */
+        .field { margin-bottom: 14px; }
+        .field:last-child { margin-bottom: 0; }
+
+        .field label {
+            display: block;
+            font-size: 13px;
+            font-weight: 600;
+            color: var(--text-secondary);
+            margin-bottom: 6px;
+        }
+
+        select, input[type="number"], input[type="text"], input[type="date"] {
+            width: 100%;
+            padding: 11px 14px;
+            border-radius: var(--radius-sm);
+            border: 1.5px solid var(--border);
+            background: var(--input-bg);
+            color: var(--text-primary);
+            font-family: inherit;
+            font-size: 15px;
+            outline: none;
+            transition: border-color 0.2s, box-shadow 0.2s;
+            appearance: none;
+        }
+
+        select {
+            background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='12' height='8' viewBox='0 0 12 8'%3E%3Cpath fill='%23718096' d='M1 1l5 5 5-5'/%3E%3C/svg%3E");
+            background-repeat: no-repeat;
+            background-position: right 14px center;
+            padding-right: 36px;
+        }
+
+        body.dark select {
+            background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='12' height='8' viewBox='0 0 12 8'%3E%3Cpath fill='%23a0aec0' d='M1 1l5 5 5-5'/%3E%3C/svg%3E");
+        }
+
+        select:focus, input:focus {
+            border-color: var(--accent);
+            box-shadow: 0 0 0 3px rgba(59, 111, 212, 0.15);
+        }
+
+        /* ── Multi-select chips ── */
+        .chips-label {
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+            margin-bottom: 8px;
+        }
+
+        .chips-label span {
+            font-size: 13px;
+            font-weight: 600;
+            color: var(--text-secondary);
+        }
+
+        .chips-label .sel-count {
+            font-size: 12px;
+            font-weight: 700;
+            background: var(--accent-light);
+            color: var(--accent);
+            padding: 2px 8px;
+            border-radius: 20px;
+        }
+
+        .chips-wrap {
+            display: flex;
+            flex-wrap: wrap;
+            gap: 6px;
+        }
+
+        .worker-chip {
+            padding: 7px 13px;
+            border-radius: 20px;
+            border: 1.5px solid var(--border);
+            background: var(--input-bg);
+            color: var(--text-secondary);
+            font-size: 13px;
+            font-weight: 500;
+            cursor: pointer;
+            font-family: inherit;
+            transition: all 0.15s;
+            user-select: none;
+        }
+
+        .worker-chip.selected {
+            border-color: var(--accent);
+            background: var(--accent-light);
+            color: var(--accent);
+        }
+
+        /* ── Info row ── */
+        .info-row {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            padding: 8px 12px;
+            background: var(--input-bg);
+            border-radius: var(--radius-sm);
+            border: 1px solid var(--border);
+            margin-bottom: 8px;
+        }
+
+        .info-row .lbl { font-size: 12px; color: var(--text-muted); }
+        .info-row .val { font-size: 14px; font-weight: 700; color: var(--text-primary); }
+
+        /* ── Summary card ── */
+        .summary-row {
+            display: flex;
+            justify-content: space-between;
+            padding: 9px 0;
+            border-bottom: 1px solid var(--border);
+            font-size: 14px;
+        }
+
+        .summary-row:last-child { border-bottom: none; }
+        .summary-row .lbl { color: var(--text-secondary); }
+        .summary-row .val { font-weight: 600; color: var(--text-primary); text-align: right; max-width: 60%; }
+
+        .summary-total {
+            display: flex;
+            justify-content: space-between;
+            padding: 12px 0 0;
+            font-size: 16px;
+            font-weight: 700;
+            color: var(--success);
+            margin-top: 4px;
+        }
+
+        /* ── Buttons ── */
+        .btn-row {
+            display: flex;
+            gap: 10px;
+            margin-top: 4px;
+        }
+
+        .btn {
+            flex: 1;
+            padding: 14px;
+            border: none;
+            border-radius: var(--radius);
+            font-family: inherit;
+            font-size: 15px;
+            font-weight: 700;
+            cursor: pointer;
+            transition: opacity 0.2s, transform 0.15s;
+        }
+
+        .btn:active { opacity: 0.8; transform: scale(0.98); }
+        .btn:disabled { opacity: 0.45; cursor: not-allowed; }
+
+        .btn-primary {
+            background: linear-gradient(135deg, var(--accent), var(--accent-hover));
+            color: #fff;
+            box-shadow: 0 4px 14px rgba(59, 111, 212, 0.35);
+        }
+
+        .btn-outline {
+            background: var(--card);
+            color: var(--text-secondary);
+            border: 1.5px solid var(--border);
+            box-shadow: none;
+        }
+
+        /* ── Loading ── */
+        .loading-state {
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            justify-content: center;
+            padding: 60px 16px;
+            gap: 14px;
+        }
+
+        .spinner {
+            width: 36px;
+            height: 36px;
+            border: 3px solid var(--border);
+            border-top-color: var(--accent);
+            border-radius: 50%;
+            animation: spin 0.7s linear infinite;
+        }
+
+        @keyframes spin { to { transform: rotate(360deg); } }
+
+        .loading-state p { font-size: 14px; color: var(--text-muted); }
+
+        /* ── Panel animation ── */
+        .panel { animation: fadeSlide 0.22s ease; }
+
+        @keyframes fadeSlide {
+            from { opacity: 0; transform: translateY(8px); }
+            to   { opacity: 1; transform: translateY(0); }
+        }
+
+        /* ── Work type grid ── */
+        .work-grid {
+            display: grid;
+            grid-template-columns: 1fr 1fr;
+            gap: 8px;
+        }
+
+        .work-tile {
+            padding: 12px 10px;
+            border-radius: var(--radius-sm);
+            border: 1.5px solid var(--border);
+            background: var(--input-bg);
+            color: var(--text-primary);
+            font-family: inherit;
+            font-size: 13px;
+            font-weight: 500;
+            cursor: pointer;
+            text-align: center;
+            transition: all 0.15s;
+            line-height: 1.3;
+        }
+
+        .work-tile:active { transform: scale(0.97); }
+
+        .work-tile.selected {
+            border-color: var(--accent);
+            background: var(--accent-light);
+            color: var(--accent);
+        }
+
+        /* ── Garden grid ── */
+        .garden-grid {
+            display: grid;
+            grid-template-columns: 1fr 1fr 1fr;
+            gap: 8px;
+        }
+
+        .garden-btn {
+            padding: 10px 6px;
+            border-radius: var(--radius-sm);
+            border: 1.5px solid var(--border);
+            background: var(--input-bg);
+            color: var(--text-primary);
+            font-family: inherit;
+            font-size: 13px;
+            font-weight: 600;
+            cursor: pointer;
+            text-align: center;
+            transition: all 0.15s;
+        }
+
+        .garden-btn.selected {
+            border-color: var(--success);
+            background: var(--success-light);
+            color: var(--success);
+        }
+
+        /* ── Empty ── */
+        .empty-msg {
+            text-align: center;
+            padding: 20px;
+            color: var(--text-muted);
+            font-size: 13px;
+        }
+    </style>
+</head>
+<body>
+
+    <!-- Header -->
+    <div class="app-header">
+        <div class="header-icon">👷</div>
+        <div class="header-text">
+            <h1>Облік праці</h1>
+            <p id="header-subtitle">Заповніть форму</p>
+        </div>
+    </div>
+
+    <div class="content" id="app-content">
+
+        <!-- Loading -->
+        <div id="screen-loading" class="loading-state">
+            <div class="spinner"></div>
+            <p>Завантаження даних...</p>
+        </div>
+
+        <!-- STEP 1: Brigade & Workers -->
+        <div id="screen-workers" class="panel" style="display:none;">
+            <div class="steps-bar">
+                <div class="step-dot active" id="sd1"></div>
+                <div class="step-dot" id="sd2"></div>
+                <div class="step-dot" id="sd3"></div>
+                <div class="step-dot" id="sd4"></div>
+            </div>
+
+            <div class="card">
+                <div class="card-title">Бригада</div>
+                <div class="field">
+                    <select id="brigade-select" onchange="onBrigadeChange()">
+                        <option value="">— оберіть бригаду —</option>
+                    </select>
+                </div>
+            </div>
+
+            <div class="card" id="workers-card" style="display:none;">
+                <div class="chips-label">
+                    <span>Працівники</span>
+                    <span class="sel-count" id="sel-count">0 обрано</span>
+                </div>
+                <div class="chips-wrap" id="workers-chips"></div>
+            </div>
+
+            <button class="btn btn-primary" id="btn-next-1" onclick="goToStep2()" disabled>
+                Далі →
+            </button>
+        </div>
+
+        <!-- STEP 2: Date & Location -->
+        <div id="screen-location" class="panel" style="display:none;">
+            <div class="steps-bar">
+                <div class="step-dot done" id="sd1b"></div>
+                <div class="step-dot active" id="sd2b"></div>
+                <div class="step-dot" id="sd3b"></div>
+                <div class="step-dot" id="sd4b"></div>
+            </div>
+
+            <div class="card">
+                <div class="card-title">Дата та локація</div>
+
+                <div class="field">
+                    <label>Дата роботи</label>
+                    <input type="date" id="work-date">
+                </div>
+
+                <div class="field">
+                    <label>Сад / блок</label>
+                    <div class="garden-grid" id="garden-grid"></div>
+                </div>
+            </div>
+
+            <div class="btn-row">
+                <button class="btn btn-outline" onclick="goToStep1()">← Назад</button>
+                <button class="btn btn-primary" id="btn-next-2" onclick="goToStep3()" disabled>Далі →</button>
+            </div>
+        </div>
+
+        <!-- STEP 3: Work type & quantity -->
+        <div id="screen-work" class="panel" style="display:none;">
+            <div class="steps-bar">
+                <div class="step-dot done"></div>
+                <div class="step-dot done"></div>
+                <div class="step-dot active"></div>
+                <div class="step-dot"></div>
+            </div>
+
+            <div class="card">
+                <div class="card-title">Вид роботи</div>
+                <div class="work-grid" id="work-grid"></div>
+            </div>
+
+            <div class="card" id="qty-card" style="display:none;">
+                <div class="card-title">Кількість та оплата</div>
+
+                <div class="field">
+                    <label id="qty-label">Кількість (год)</label>
+                    <input type="number" id="qty-input" placeholder="0.0" step="0.5" min="0" inputmode="decimal">
+                </div>
+
+                <div class="field" id="rate-field" style="display:none;">
+                    <label>Ставка (грн)</label>
+                    <input type="number" id="rate-input" placeholder="0.00" step="0.5" min="0" inputmode="decimal">
+                </div>
+
+                <div class="info-row" id="total-row" style="display:none;">
+                    <span class="lbl">Сума на кожного</span>
+                    <span class="val" id="total-val">0 грн</span>
+                </div>
+            </div>
+
+            <div class="btn-row">
+                <button class="btn btn-outline" onclick="goToStep2()">← Назад</button>
+                <button class="btn btn-primary" id="btn-next-3" onclick="goToStep4()" disabled>Далі →</button>
+            </div>
+        </div>
+
+        <!-- STEP 4: Confirmation -->
+        <div id="screen-confirm" class="panel" style="display:none;">
+            <div class="steps-bar">
+                <div class="step-dot done"></div>
+                <div class="step-dot done"></div>
+                <div class="step-dot done"></div>
+                <div class="step-dot active"></div>
+            </div>
+
+            <div class="card">
+                <div class="card-title">Підтвердження</div>
+                <div id="summary-rows"></div>
+                <div class="summary-total">
+                    <span>💰 Сума (на кожного)</span>
+                    <span id="summary-total">0 грн</span>
+                </div>
+            </div>
+
+            <div class="btn-row">
+                <button class="btn btn-outline" onclick="goToStep3()">← Змінити</button>
+                <button class="btn btn-primary" id="btn-confirm" onclick="submitData()">✅ Записати</button>
+            </div>
+        </div>
+
+    </div>
+
+    <script>
+    const tg = window.Telegram.WebApp;
+    tg.ready();
+    tg.expand();
+    if (tg.colorScheme === 'dark') document.body.classList.add('dark');
+
+    // ── API ──────────────────────────────────────────────────────────────────
+    const SCRIPT_URL = 'https://script.google.com/macros/s/AKfycbyIrHEqyg_84TioXK6AYIMUL9ENn7LhmPFqfA88hLdUQhoqVRKPlqtB0uLxPqsMwt6d/exec';
+
+    // ── Data ─────────────────────────────────────────────────────────────────
+    let workersData  = [];       // [{name, brigade, role}]
+    let normsData    = [];       // [{name, unit, rate}]
+    let selectedWorkers = [];    // [{name}]
+    let selectedGarden  = '';
+    let selectedWorkType = null; // {name, unit, rate}
+
+    const GARDENS = [
+        'Сад №1','Сад №2','Сад №3','Сад №4','Сад №5',
+        'Сад №6','Сад №7 (Розсадник)','Сад №8','Сад №9','Інше'
+    ];
+
+    // ── Init ─────────────────────────────────────────────────────────────────
+    document.getElementById('work-date').value = todayISO();
+
+    async function init() {
+        try {
+            const [wRes, nRes] = await Promise.all([
+                fetch(SCRIPT_URL + '?action=workers'),
+                fetch(SCRIPT_URL + '?action=norms')
+            ]);
+            workersData = await wRes.json();
+
+            // Norms might not exist yet — use config fallback
+            try { normsData = await nRes.json(); } catch { normsData = []; }
+            // Фільтруємо порожні/технічні рядки типу "-"
+            if (Array.isArray(normsData)) {
+                normsData = normsData.filter(n => n.name && n.name.trim() !== '-' && n.name.trim() !== '');
+            }
+            if (!Array.isArray(normsData) || normsData.length === 0) {
+                normsData = DEFAULT_WORK_TYPES;
+            }
+
+            buildBrigadeSelect();
+            buildGardenGrid();
+            buildWorkGrid();
+
+            show('screen-workers');
+        } catch (e) {
+            document.getElementById('screen-loading').innerHTML =
+                '<div style="text-align:center;padding:40px;color:var(--danger)">⚠️ Помилка завантаження.<br><small>' + e.message + '</small></div>';
+        }
+    }
+
+    // Fallback work types (from config.py)
+    const DEFAULT_WORK_TYPES = [
+        { name: 'Збирання врожаю', unit: 'год', rate: 0 },
+        { name: 'Обрізка',         unit: 'год', rate: 0 },
+        { name: 'Полив',           unit: 'год', rate: 0 },
+        { name: 'Обробка ЗЗР',     unit: 'год', rate: 0 },
+        { name: 'Посадка',         unit: 'год', rate: 0 },
+        { name: 'Прополка',        unit: 'год', rate: 0 },
+        { name: 'Внесення добрив', unit: 'год', rate: 0 },
+        { name: 'Інше',            unit: 'год', rate: 0 },
+    ];
+
+    function todayISO() {
+        return new Date().toISOString().split('T')[0];
+    }
+
+    // ── Screen navigation ─────────────────────────────────────────────────────
+    function show(id) {
+        ['screen-loading','screen-workers','screen-location','screen-work','screen-confirm']
+            .forEach(s => document.getElementById(s).style.display = 'none');
+        document.getElementById(id).style.display = 'block';
+        setSubtitle(id);
+    }
+
+    function setSubtitle(id) {
+        const map = {
+            'screen-workers'  : 'Крок 1 / 4 — Бригада',
+            'screen-location' : 'Крок 2 / 4 — Дата та локація',
+            'screen-work'     : 'Крок 3 / 4 — Вид роботи',
+            'screen-confirm'  : 'Крок 4 / 4 — Підтвердження',
+        };
+        document.getElementById('header-subtitle').textContent = map[id] || '';
+    }
+
+    // ── Step 1: Brigade & Workers ─────────────────────────────────────────────
+    function buildBrigadeSelect() {
+        const sel = document.getElementById('brigade-select');
+        sel.innerHTML = '<option value="">— оберіть бригаду —</option>';
+        const brigades = [...new Set(workersData.map(w => w.brigade).filter(Boolean))].sort();
+        brigades.forEach(b => {
+            const o = document.createElement('option');
+            o.value = o.textContent = b;
+            sel.appendChild(o);
+        });
+    }
+
+    function onBrigadeChange() {
+        const brigade = document.getElementById('brigade-select').value;
+        selectedWorkers = [];
+        updateSelCount();
+        document.getElementById('btn-next-1').disabled = true;
+
+        const card = document.getElementById('workers-card');
+        const wrap = document.getElementById('workers-chips');
+
+        if (!brigade) { card.style.display = 'none'; return; }
+
+        const people = workersData.filter(w => w.brigade === brigade);
+        wrap.innerHTML = '';
+        people.forEach(w => {
+            const chip = document.createElement('button');
+            chip.className = 'worker-chip';
+            chip.textContent = shortName(w.name);
+            chip.title = w.name;
+            chip.onclick = () => toggleWorker(w.name, chip);
+            wrap.appendChild(chip);
+        });
+
+        card.style.display = 'block';
+    }
+
+    function shortName(full) {
+        // "Іваненко Іван Петрович" → "Іваненко І.П."
+        const parts = full.trim().split(/\s+/);
+        if (parts.length === 1) return full;
+        const last = parts[0];
+        const initials = parts.slice(1).map(p => p[0] ? p[0] + '.' : '').join('');
+        return last + ' ' + initials;
+    }
+
+    function toggleWorker(name, chip) {
+        const idx = selectedWorkers.indexOf(name);
+        if (idx >= 0) {
+            selectedWorkers.splice(idx, 1);
+            chip.classList.remove('selected');
+        } else {
+            selectedWorkers.push(name);
+            chip.classList.add('selected');
+        }
+        updateSelCount();
+        document.getElementById('btn-next-1').disabled = selectedWorkers.length === 0;
+    }
+
+    function updateSelCount() {
+        const n = selectedWorkers.length;
+        document.getElementById('sel-count').textContent = n + ' обрано';
+    }
+
+    function goToStep1() {
+        show('screen-workers');
+        selectedGarden = '';
+        selectedWorkType = null;
+        document.getElementById('btn-next-2').disabled = true;
+        document.getElementById('btn-next-3').disabled = true;
+        document.querySelectorAll('.garden-btn').forEach(b => b.classList.remove('selected'));
+        document.querySelectorAll('.work-tile').forEach(t => t.classList.remove('selected'));
+        document.getElementById('qty-card').style.display = 'none';
+    }
+
+    function goToStep2() {
+        show('screen-location');
+    }
+
+    // ── Step 2: Date & Garden ─────────────────────────────────────────────────
+    function buildGardenGrid() {
+        const grid = document.getElementById('garden-grid');
+        GARDENS.forEach(g => {
+            const btn = document.createElement('button');
+            btn.className = 'garden-btn';
+            btn.textContent = g === 'Інше' ? '📍 Інше' : g;
+            btn.onclick = () => selectGarden(g, btn);
+            grid.appendChild(btn);
+        });
+    }
+
+    function selectGarden(name, btn) {
+        selectedGarden = name;
+        document.querySelectorAll('.garden-btn').forEach(b => b.classList.remove('selected'));
+        btn.classList.add('selected');
+        checkStep2();
+    }
+
+    function checkStep2() {
+        const date = document.getElementById('work-date').value;
+        document.getElementById('btn-next-2').disabled = !(date && selectedGarden);
+    }
+
+    document.getElementById('work-date').addEventListener('change', checkStep2);
+
+    function goToStep3() {
+        selectedWorkType = null;
+        document.querySelectorAll('.work-tile').forEach(t => t.classList.remove('selected'));
+        document.getElementById('qty-card').style.display = 'none';
+        document.getElementById('btn-next-3').disabled = true;
+        show('screen-work');
+    }
+
+    // ── Step 3: Work type ─────────────────────────────────────────────────────
+    function buildWorkGrid() {
+        const grid = document.getElementById('work-grid');
+        const ICONS = {
+            'Збирання врожаю': '🌰', 'Обрізка': '✂️', 'Полив': '💧',
+            'Обробка ЗЗР': '🧪', 'Посадка': '🌱', 'Прополка': '🌿',
+            'Внесення добрив': '🌾', 'Інше': '📋'
+        };
+        const list = normsData.length ? normsData : DEFAULT_WORK_TYPES;
+        list.forEach((wt, i) => {
+            const tile = document.createElement('button');
+            tile.className = 'work-tile';
+            tile.id = 'wt-' + i;
+            const icon = ICONS[wt.name] || '🔧';
+            tile.innerHTML = icon + '<br>' + wt.name;
+            tile.onclick = () => selectWorkType(wt, tile);
+            grid.appendChild(tile);
+        });
+
+        // Manual entry tile
+        const manual = document.createElement('button');
+        manual.className = 'work-tile';
+        manual.innerHTML = '✏️<br>Вручну';
+        manual.onclick = () => selectWorkTypeManual(manual);
+        grid.appendChild(manual);
+    }
+
+    function selectWorkType(wt, tile) {
+        selectedWorkType = wt;
+        document.querySelectorAll('.work-tile').forEach(t => t.classList.remove('selected'));
+        tile.classList.add('selected');
+        showQtyFields(wt);
+    }
+
+    function selectWorkTypeManual(tile) {
+        const name = prompt('Введіть вид роботи:');
+        if (!name) return;
+        selectedWorkType = { name: name.trim(), unit: 'год', rate: 0 };
+        document.querySelectorAll('.work-tile').forEach(t => t.classList.remove('selected'));
+        tile.classList.add('selected');
+        showQtyFields(selectedWorkType);
+    }
+
+    function showQtyFields(wt) {
+        const qtyCard   = document.getElementById('qty-card');
+        const qtyLabel  = document.getElementById('qty-label');
+        const rateField = document.getElementById('rate-field');
+        const rateInput = document.getElementById('rate-input');
+
+        qtyLabel.textContent = 'Кількість (' + (wt.unit || 'год') + ')';
+        document.getElementById('qty-input').value = '';
+
+        if (wt.rate && wt.rate > 0) {
+            rateInput.value = wt.rate;
+            rateField.style.display = 'none'; // known rate — hide
+        } else {
+            rateInput.value = '';
+            rateField.style.display = 'block'; // ask for rate
+        }
+
+        document.getElementById('total-row').style.display = 'none';
+        qtyCard.style.display = 'block';
+        document.getElementById('btn-next-3').disabled = true;
+
+        document.getElementById('qty-input').oninput =
+        document.getElementById('rate-input').oninput = calcTotal;
+    }
+
+    function calcTotal() {
+        const qty  = parseFloat(document.getElementById('qty-input').value)  || 0;
+        const rate = parseFloat(document.getElementById('rate-input').value) || 0;
+        const total = Math.round(qty * rate * 100) / 100;
+
+        const totalRow = document.getElementById('total-row');
+        const totalVal = document.getElementById('total-val');
+
+        if (qty > 0 && rate > 0) {
+            totalVal.textContent = total + ' грн';
+            totalRow.style.display = 'flex';
+        } else {
+            totalRow.style.display = 'none';
+        }
+
+        document.getElementById('btn-next-3').disabled = !(qty > 0);
+    }
+
+    // ── Step 4: Confirm ───────────────────────────────────────────────────────
+    function goToStep4() {
+        const qty  = parseFloat(document.getElementById('qty-input').value)  || 0;
+        const rate = parseFloat(document.getElementById('rate-input').value) || 0;
+        const total = Math.round(qty * rate * 100) / 100;
+        const date = document.getElementById('work-date').value;
+        // format date dd.mm.yyyy
+        const dateDisp = date ? date.split('-').reverse().join('.') : '—';
+
+        const rows = [
+            { lbl: '👷 Працівники', val: selectedWorkers.map(shortName).join(', ') },
+            { lbl: '📅 Дата',        val: dateDisp },
+            { lbl: '🌳 Сад / блок',  val: selectedGarden },
+            { lbl: '🔧 Вид роботи',  val: selectedWorkType.name },
+            { lbl: '📊 Кількість',   val: qty + ' ' + (selectedWorkType.unit || 'год') },
+            { lbl: '💳 Ставка',      val: rate > 0 ? rate + ' грн' : '—' },
+        ];
+
+        const cont = document.getElementById('summary-rows');
+        cont.innerHTML = '';
+        rows.forEach(r => {
+            const row = document.createElement('div');
+            row.className = 'summary-row';
+            row.innerHTML = `<span class="lbl">${r.lbl}</span><span class="val">${r.val}</span>`;
+            cont.appendChild(row);
+        });
+
+        document.getElementById('summary-total').textContent =
+            total > 0 ? total + ' грн' : '— (без ставки)';
+
+        show('screen-confirm');
+    }
+
+    // ── Submit ────────────────────────────────────────────────────────────────
+    function submitData() {
+        const qty  = parseFloat(document.getElementById('qty-input').value)  || 0;
+        const rate = parseFloat(document.getElementById('rate-input').value) || 0;
+        const date = document.getElementById('work-date').value;
+        const dateDisp = date ? date.split('-').reverse().join('.') : '';
+
+        const payload = {
+            action        : 'labor',
+            workers       : selectedWorkers,
+            garden        : selectedGarden,
+            work_type     : selectedWorkType.name,
+            norm_unit     : selectedWorkType.unit || 'год',
+            units         : qty,
+            rate          : rate,
+            pay_mode      : (selectedWorkType.unit || 'год').startsWith('год') ? 'Погодинно' : 'За обсягом (га)',
+            date          : dateDisp,
+            workers_count : selectedWorkers.length,
+        };
+
+        document.getElementById('btn-confirm').disabled = true;
+        document.getElementById('btn-confirm').textContent = '⏳ Записую...';
+
+        tg.sendData(JSON.stringify(payload));
+    }
+
+    // ── Start ─────────────────────────────────────────────────────────────────
+    init();
+    </script>
+</body>
+</html>
